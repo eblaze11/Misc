@@ -1,0 +1,53 @@
+const script = document.createElement('script');
+script.src = "https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js";
+
+script.onload = () => {
+  $ = jQuery.noConflict();
+  
+const imageList = [];
+
+// while there is a next button
+while($('div.zsg-icon-expando-right').length) {
+  const srcs = $('.hdp-photo-gallery-lightbox-content .hdp-gallery-image-content:visible source[type="image/jpeg"]').attr('srcset').split(' ');
+  const src = srcs[srcs.length - 2];
+  // just in case... let make sure the src is not already in the list.
+  if (imageList.indexOf(src) === -1) {
+    imageList.push(src);
+  }
+  // go to the next slide
+  $('div.zsg-icon-expando-right').click();
+};
+
+const delay = ms => new Promise(res => setTimeout(res, ms)); // promise delay
+  
+  // get all image blobs in parallel first before downloading for proper batching
+  Promise.all(imageList.map(i => fetch(i))
+  ).then(responses =>
+    Promise.all(responses.map(res => res.blob()))
+    ).then(async (blobs) => {
+      for (let i = 0; i < blobs.length; i++) {
+        if (i % 10 === 0) {
+          console.log('1 sec delay...');
+          await delay(1000);
+        }
+        
+        var a = document.createElement('a');
+        a.style = "display: none";
+        console.log(i);
+        
+        var url = window.URL.createObjectURL(blobs[i]);
+        a.href = url;
+        a.download = i + '';
+        document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    }
+  });
+
+};
+
+
+document.getElementsByTagName('head')[0].appendChild(script);
